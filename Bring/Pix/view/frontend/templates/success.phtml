@@ -1,0 +1,42 @@
+<?php
+/**
+ * @var Bring\Pix\Block\Basic\Info $block
+ */
+
+// $payment = $this->getPayment();
+//$paymentResponse = $payment->getAdditionalInformation("paymentResponse");
+//$payment_method = $this->getPaymentMethod();
+
+if($block->getPaymentMethod() === "bring_pix"):
+	$paymentInfo = $block->getPaymentInfo();
+?>
+
+	<?php if($paymentInfo): 
+		$pix = $paymentInfo['pix'];
+		$qrcode = $paymentInfo['qrcode'];
+		$instrucoes = $paymentInfo['instrucoes'];
+	?>
+		<div class="success-title-wrapper pix-bring"><h1 class="page-title" data-ui-id="page-title-wrapper">Pedido gerado com sucesso!</h1></div>
+		
+		<div id="box-pix">
+			<div class="qrcode-success"> <!-- MOSTRAR NO DESKTOP E MOBILE -->
+				<img src="<?php echo $qrcode ?>"/>
+				<button onclick="navigator.clipboard.writeText('<?php echo $pix ?>')" >PIX Copia e Cola</button>
+			</div>
+			<div class="direita-pix">
+				<div id="logo-pix">
+					<img src="<?php echo $this->getViewFileUrl("Bring_Pix::images/pix_logo.png"); ?>"/>
+				</div>
+				<div class="pix-instrucoes">
+					<p><strong>REALIZE O PAGAMENTO AGORA</strong></p>
+					<p><strong>1)</strong> Abra o app do seu banco ou instituição financeira e entre no ambiente PIX</p>
+					<p><strong>2)</strong> Escolha a opção pagar com QRCode e escaneie o código ao lado.</p>
+					<p>Se preferir, clique no botão PIX COPIA E COLA para utilizar tal função.</p>
+					<p><strong>3)</strong> Confira as informações e finalize o pagamento.</p>
+					<?php echo $instrucoes ?>
+				</div>
+			</div>
+		</div>
+		
+	<?php endif;?>
+<?php endif; ?>

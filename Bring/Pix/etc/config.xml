@@ -1,0 +1,32 @@
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <bring_pix>
+                <model>Bring\Pix\Model\Payment</model>
+                <active>1</active>
+                <title translate="label">Pix by Bring (bring.com.br)</title>
+                <allowspecific>0</allowspecific>
+                <sort_order>-1</sort_order>
+                <order_status>pending</order_status>
+				<!--<order_status_approved>processing</order_status_approved>
+                <order_status_in_process>pending</order_status_in_process>
+                <order_status_pending>pending</order_status_pending>
+                <order_status_rejected>pending</order_status_rejected>
+                <order_status_cancelled>pending</order_status_cancelled>
+                <order_status_chargeback>pending</order_status_chargeback>
+                <order_status_in_mediation>pending</order_status_in_mediation>
+                <order_status_refunded>pending</order_status_refunded>
+                <order_status_partially_refunded>pending</order_status_partially_refunded>-->
+                <refund_available>0</refund_available>
+                <cancel_payment>0</cancel_payment>
+                <use_successpage>0</use_successpage>
+                <financing_cost>0</financing_cost>
+                <consider_discount>0</consider_discount>
+                <email_order_create>1</email_order_create>
+                <email_order_update>pending,approved,in_process,in_mediation,rejected,cancelled,refunded,charged_back
+                </email_order_update>
+                <logs>1</logs>
+            </bring_pix>
+        </payment>
+    </default>
+</config>

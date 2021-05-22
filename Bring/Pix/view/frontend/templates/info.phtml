@@ -1,0 +1,18 @@
+<?php
+/** @var \Bring\Pix\Block\Info $block */
+
+//$paymentInfo = $block->getPaymentInfo();
+
+?>
+
+<?php /*if($paymentInfo): 
+		$pix = $paymentInfo['pix'];
+        $qrcode = $paymentInfo['qrcode'];*/
+        $additionalInfo = $block->getAdditionalInformation();
+?>
+	<p><strong><?php echo $additionalInfo['method_title'] ?></strong></p>
+
+	<!--<table class="data-table admin__table-secondary">
+        <tr><th>PIX</th><td style="word-break: break-word;"><?php //echo $pix; ?></td></tr>
+        <tr><th>QRCode</th><td><img width="160" src="<?php //echo $qrcode ?>"/></td></tr>
+	</table>-->

@@ -1,0 +1,679 @@
+<?php  /** @author contato@bring.com.br */
+
+namespace Bring\Pix\Model;
+
+use Bring\Pix\Helper\Data as dataHelper;
+
+/**
+ * Core Model of CP plugin, used by all payment methods
+ *
+ * Class Core
+ *
+ * @package Bring\Pix\Model
+ */
+//class Core extends \Magento\Payment\Model\Method\Cc
+class Core extends \Magento\Payment\Model\Method\AbstractMethod
+{
+    /**
+     * @var string
+     */
+    protected $_code = 'bring_pix';
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_isGateway = false;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canOrder = true;
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canAuthorize = false;
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canCapture = false;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canCapturePartial = false;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canRefund = true;
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canRefundInvoicePartial = true;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canVoid = true;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canUseInternal = true;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canUseCheckout = true;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canFetchTransactionInfo = true;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $_canReviewPayment = true;
+
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface
+     */
+    protected $_storeManager;
+
+    /**
+     * @var \Bring\Pix\Helper\
+     */
+    protected $_coreHelper;
+
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
+    protected $_scopeConfig;
+
+    /**
+     * @var \Magento\Sales\Model\OrderFactory
+     */
+    protected $_orderFactory;
+
+    /**
+     * @var
+     */
+    protected $_accessToken;
+    /**
+     * @var
+     */
+    protected $_clientId;
+    /**
+     * @var
+     */
+    protected $_clientSecret;
+
+    /**
+     * @var \Magento\Framework\DB\TransactionFactory
+     */
+    protected $_transactionFactory;
+    /**
+     * @var \Magento\Sales\Model\Order\Email\Sender\InvoiceSender
+     */
+    protected $_invoiceSender;
+    /**
+     * @var \Magento\Sales\Model\Order\Email\Sender\OrderSender
+     */
+    protected $_orderSender;
+
+    /**
+     * @var \Magento\Checkout\Model\Session
+     */
+    protected $_checkoutSession;
+    /**
+     * @var \Magento\Customer\Model\Session
+     */
+    protected $_customerSession;
+    /**
+     * @var \Magento\Framework\UrlInterface
+     */
+    protected $_urlBuilder;
+    /**
+     * @var \Magento\Catalog\Helper\Image
+     */
+    protected $_helperImage;
+
+    /**
+     * @var \Magento\Framework\App\ProductMetadataInterface
+     */
+    protected $_productMetaData;
+
+    protected $_helperData;
+
+
+    /**
+     * @var \Bring\Pix\Block\Adminhtml\System\Config\Version
+     */
+    protected $_version;
+
+    /**
+     * Core constructor.
+     *
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Bring\Pix\Helper\Data $coreHelper
+     * @param \Magento\Sales\Model\OrderFactory $orderFactory
+     * @param \Magento\Framework\Model\Context $context
+     * @param \Magento\Framework\Registry $registry
+     * @param \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory
+     * @param \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory
+     * @param \Magento\Payment\Model\Method\Logger $logger
+     * @param \Magento\Payment\Helper\Data $paymentData
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Magento\Framework\DB\TransactionFactory $transactionFactory
+     * @param \Magento\Sales\Model\Order\Email\Sender\InvoiceSender $invoiceSender
+     * @param \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender
+     * @param \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Framework\UrlInterface $urlBuilder
+     * @param \Magento\Catalog\Helper\Image $helperImage
+     * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param dataHelper $helperData
+     */
+    public function __construct(
+        \Magento\Store\Model\StoreManagerInterface $storeManager,
+        \Bring\Pix\Helper\Data $coreHelper,
+        \Magento\Sales\Model\OrderFactory $orderFactory,
+        \Magento\Framework\Model\Context $context,
+        \Magento\Framework\Registry $registry,
+        \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory,
+        \Magento\Framework\Api\AttributeValueFactory $customAttributeFactory,
+        \Magento\Payment\Model\Method\Logger $logger,
+        \Magento\Payment\Helper\Data $paymentData,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        \Magento\Framework\DB\TransactionFactory $transactionFactory,
+        \Magento\Sales\Model\Order\Email\Sender\InvoiceSender $invoiceSender,
+        \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender,
+        \Magento\Customer\Model\Session $customerSession,
+        \Magento\Framework\UrlInterface $urlBuilder,
+        \Magento\Catalog\Helper\Image $helperImage,
+        \Magento\Checkout\Model\Session $checkoutSession,
+        \Bring\Pix\Block\Adminhtml\System\Config\Version $version,
+        \Magento\Framework\App\ProductMetadataInterface $productMetadata
+        //dataHelper $helperData
+    )
+    {
+        parent::__construct($context, $registry, $extensionFactory, $customAttributeFactory, $paymentData, $scopeConfig, $logger, null, null, []);
+        $this->_storeManager = $storeManager;
+        $this->_coreHelper = $coreHelper;
+        $this->_orderFactory = $orderFactory;
+        $this->_transactionFactory = $transactionFactory;
+        $this->_invoiceSender = $invoiceSender;
+        $this->_orderSender = $orderSender;
+        $this->_customerSession = $customerSession;
+        $this->_urlBuilder = $urlBuilder;
+        $this->_helperImage = $helperImage;
+        //$this->_helperData = $helperData;
+        $this->_checkoutSession = $checkoutSession;
+        $this->_productMetaData = $productMetadata;
+        $this->_version = $version;
+    }
+
+    /**
+     * Retrieves Quote
+     *
+     * @param integer $quoteId
+     *
+     * @return \Magento\Quote\Model\Quote
+     */
+    protected function _getQuote()
+    {
+        return $this->_checkoutSession->getQuote();
+    }
+
+    /**
+     * Retrieves Order
+     *
+     * @param integer $incrementId
+     *
+     * @return \Magento\Sales\Model\Order
+     */
+    public function _getOrder($incrementId)
+    {
+        return $this->_orderFactory->create()->loadByIncrementId($incrementId);
+    }
+
+    /**
+     * Return array with data of payment of order loaded with order_id param
+     *
+     * @param $order_id
+     *
+     * @return array
+     */
+    // @REFACTOR
+    public function getInfoPaymentByOrder($order_id)
+    {
+        $order = $this->_getOrder($order_id);
+        $payment = $order->getPayment();
+        $info_payments = [];
+        $fields = [
+            ["field" => "cardholderName", "title" => "Card Holder Name: %1"],
+            ["field" => "trunc_card", "title" => "Card Number: %1"],
+            ["field" => "payment_method", "title" => "Payment Method: %1"],
+            ["field" => "expiration_date", "title" => "Expiration Date: %1"],
+            ["field" => "installments", "title" => "Installments: %1"],
+            ["field" => "statement_descriptor", "title" => "Statement Descriptor: %1"],
+            ["field" => "payment_id", "title" => "Payment id (Pix): %1"],
+            ["field" => "status", "title" => "Payment Status: %1"],
+            ["field" => "status_detail", "title" => "Payment Detail: %1"],
+            ["field" => "activation_uri", "title" => "Generate Ticket"],
+            ["field" => "payment_id_detail", "title" => "Pix Payment Id: %1"],
+            ["field" => "id", "title" => "Collection Id: %1"],
+        ];
+
+        foreach ($fields as $field) {
+            if ($payment->getAdditionalInformation($field['field']) != "") {
+                $text = __($field['title'], $payment->getAdditionalInformation($field['field']));
+                $info_payments[$field['field']] = [
+                    "text" => $text,
+                    "value" => $payment->getAdditionalInformation($field['field'])
+                ];
+            }
+        }
+
+        if ($payment->getAdditionalInformation('payer_identification_type') != "") {
+            $text = __($payment->getAdditionalInformation('payer_identification_type'));
+            $info_payments[$payment->getAdditionalInformation('payer_identification_type')] = [
+                "text" => $text . ': ' . $payment->getAdditionalInformation('payer_identification_number')
+            ];
+        }
+
+        return $info_payments;
+    }
+
+    /**
+     * Check if status is final in case of multiple card payment
+     *
+     * @param $status
+     *
+     * @return string
+     */
+    protected function validStatusTwoPayments($status)
+    {
+        $array_status = explode(" | ", $status);
+        $status_verif = true;
+        $status_final = "";
+        foreach ($array_status as $status) {
+            if ($status_final == "") {
+                $status_final = $status;
+            } else {
+                if ($status_final != $status) {
+                    $status_verif = false;
+                }
+            }
+        }
+
+        if ($status_verif === false) {
+            $status_final = "other";
+        }
+
+        return $status_final;
+    }
+
+    /**
+     * Return array with info of customer
+     *
+     * @param $customer
+     * @param $order
+     *
+     * @return array
+     */
+    protected function getCustomerInfo($customer, $order)
+    {
+        $email = htmlentities($customer->getEmail());
+        if ($email == "") {
+            $email = $order['customer_email'];
+        }
+
+        $first_name = htmlentities($customer->getFirstname());
+        if ($first_name == "") {
+            $first_name = $order->getBillingAddress()->getFirstname();
+        }
+
+        $last_name = htmlentities($customer->getLastname());
+        if ($last_name == "") {
+            $last_name = $order->getBillingAddress()->getLastname();
+        }
+
+        return ['email' => $email, 'first_name' => $first_name, 'last_name' => $last_name];
+    }
+
+    /**
+     * Return info about items of order
+     *
+     * @param $order
+     *
+     * @return array
+     */
+    protected function getItemsInfo($order)
+    {
+        $dataItems = [];
+
+        foreach ($order->getAllVisibleItems() as $item) {
+            $product = $item->getProduct();
+            $image = $this->_helperImage->init($product, 'image');
+
+            $dataItems[] = [
+                //"id" => $item->getSku(),
+                "name" => $product->getName(),
+                "description" => $product->getName(),
+                //"picture_url" => $image->getUrl(),
+                //"category_id" => $this->_scopeConfig->getValue(\Bring\Pix\Helper\ConfigData::PATH_ADVANCED_CATEGORY, \Magento\Store\Model\ScopeInterface::SCOPE_STORE),
+                "count" => (int)number_format($item->getQtyOrdered(), 0, '.', ''),
+                "price" => (float)number_format($item->getPrice(), 2, '.', '')
+            ];
+        }
+
+        /* verify discount and add it like an item */
+        /*
+        $discount = $this->getDiscount();
+        if ($discount != 0) {
+            $dataItems[] = [
+                "title" => "Discount by the Store",
+                "description" => "Discount by the Store",
+                "quantity" => 1,
+                "unit_price" => (float)number_format($discount, 2, '.', '')
+            ];
+        }
+        */
+
+        return $dataItems;
+    }
+
+    /**
+     * Return array with preference data by default to custom method
+     *
+     * @param array $payment_info
+     *
+     * @return array
+     */
+    public function makeDefaultPreferencePaymentV1($paymentInfo = [], $quote = null, $order = null)
+    {
+        $this->_coreHelper->log("makeDefaultPreferencePaymentV1 -> start");
+
+        if (!$quote) {
+            $quote = $this->_getQuote();
+        }
+        $orderId = $quote->getReservedOrderId();
+        if (!$order) {
+            $order = $this->_getOrder($orderId);
+        }
+
+        $customer = $this->_customerSession->getCustomer();
+
+        $address = $quote->getBillingAddress();
+        $billing_address = $address->getData();
+        $customerInfo = $this->getCustomerInfo($customer, $order);
+
+        $this->_coreHelper->log("makeDefaultPreferencePaymentV1 -> INIT PREFERENCE");
+
+        /* INIT PREFERENCE */
+        $preference = [];
+
+        // Check if notification URL contains localhost
+        /*$notification_url = $this->_urlBuilder->getUrl('pix/notifications/custom');
+        if (isset($notification_url) && !strrpos($notification_url, 'localhost')) {
+            $preference['notification_url'] = $notification_url;
+        }*/
+
+        //$timezone = $this->_coreHelper->getTimezone();
+
+        //$preference['request']['id'] = $timezone->date()->getTimestamp();
+        $preference['request']['id'] = time();       
+
+        //$this->_coreHelper->log("makeDefaultPreferencePaymentV1 -> timezone");
+        //$preference['request']['time'] = date("Y-m-dTH:i:sZ"); 
+        $preference['request']['time'] = date("c"); 
+
+        $preference['merchant_order']['id'] = $order->getIncrementId();
+        $preference['merchant_order']['description'] = __("Order # %1 in store %2", $order->getIncrementId(), $this->_storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_LINK));
+
+        $preference['payment_data']['amount'] = (float)$this->getAmount();
+        
+        //$preference['payment_data']['currency'] = 'USD'; 
+        $currencyCode = $this->_storeManager->getStore()->getCurrentCurrency()->getCode();
+        $preference['payment_data']['currency'] = $currencyCode; 
+
+        /*
+        if ($payment->getAdditionalInformation("docType") != "") {
+            $preference['payer']['identification']['type'] = $payment->getAdditionalInformation("docType");
+            //remove last-name pessoa juridica
+            if ($preference['payer']['identification']['type'] == "CNPJ") {
+                $preference['payer']['last_name'] = "";
+            }
+        }
+        */
+
+        $preference['merchant_order']['items'] = $this->getItemsInfo($order);
+        
+        
+		//$taxvat = $this->checkoutSession->getQuote()->getCustomer()->getTaxvat();
+        //$taxvat = $this->customerSession->getCustomer()->getTaxvat();
+        
+        $docNumber = '';      
+        if (!empty($paymentInfo['identification_number'])) {
+            $docNumber = $paymentInfo['identification_number'];
+        }
+        if (empty($docNumber) && !empty($customer->getTaxvat())) {
+                $docNumber = $customer->getTaxvat();
+        }
+        if (empty($docNumber) && !empty($address->getTaxvat())) {
+            $docNumber = $address->getTaxvat();
+        }
+        if (empty($docNumber)) {
+            $docNumber = '11111111111';
+        }
+
+        //if (!empty($paymentInfo['identification_type'])) {
+            //$preference['customer']['document_type'] = $paymentInfo['identification_type'];
+        //}
+
+        $preference['customer']['identity'] = $docNumber;
+        $preference['customer']['email'] = $customerInfo['email'];
+        $preference['customer']['first_name'] = $customerInfo['first_name'];
+        $preference['customer']['last_name'] = $customerInfo['last_name'];
+        $preference['customer']['full_name'] = $customerInfo['first_name'] . ' ' . $customerInfo['last_name'];
+
+        $phone = trim($billing_address['telephone']);
+        if (strlen($phone) < 8) {
+            $phone = str_pad($phone, 8, '0');
+        } 
+        $preference['customer']['phone'] = $phone;
+
+        $preference['customer']['living_address'] = [
+            "address" => $billing_address['street'],
+            "city" => $billing_address['city'],
+            "country" => $billing_address['country_id'],
+            "zip" => $billing_address['postcode'],
+        ];
+
+         if ($order->canShip()) {
+            $shipping = $order->getShippingAddress()->getData();
+
+            $sPhone = trim($shipping['telephone']);
+            if (strlen($sPhone) < 8) {
+                $sPhone = str_pad($sPhone, 8, '0');
+            } 
+
+            $preference['merchant_order']['shipping_address'] = [
+                "addr_line_1" => $shipping['street'],
+                "city" => $shipping['city'],
+                "country" => $shipping['country_id'],
+                "phone" => $sPhone,
+                "zip" => $shipping['postcode'],
+            ];
+        }
+
+        $this->_coreHelper->log("makeDefaultPreferencePaymentV1 -> preference", 'pix', $preference);
+
+        $this->_coreHelper->log("makeDefaultPreferencePaymentV1", 'pix', $paymentInfo);
+
+        /*
+        $this->_version->afterLoad();
+        $preference['metadata'] = array(
+            "platform" => "Magento",
+            "platform_version" => $this->_productMetaData->getVersion(),
+            "module_version" => $this->_version->getValue(),
+            "site" => $this->_scopeConfig->getValue(\Bring\Pix\Helper\ConfigData::PATH_ADVANCED_COUNTRY, \Magento\Store\Model\ScopeInterface::SCOPE_STORE),
+            "checkout" => "custom",
+            "sponsor_id" => $sponsorId,
+            "test_mode" => $test_mode
+        );*/
+
+        return $preference;
+    }
+
+    private function getApiInstance() {
+        //get client id
+        if (!$this->_clientId) {
+            $this->_clientId = $this->_coreHelper->getPublicKey();
+        }
+
+        //get client secret
+        if (!$this->_clientSecret) {
+            $this->_clientSecret = $this->_coreHelper->getSecretKey();
+        }
+
+        /*
+        $this->_coreHelper->log("Terminal Code for Post", 'pix-custom', $this->_clientId);
+        $this->_coreHelper->log("Public Key for Post", 'pix-custom', $this->_clientSecret);
+        */
+
+        //set sdk php pix
+        $cp = $this->_coreHelper->getApiInstance($this->_clientId, $this->_clientSecret);
+
+        return($cp);
+    }
+    
+    /**
+     * Get message error by response API
+     *
+     * @param $response
+     *
+     * @return string
+     */
+    public function getMessageError($response)
+    {
+        $errors = \Bring\Pix\Helper\Response::PAYMENT_CREATION_ERRORS;
+
+        //set default error
+        $messageErrorToClient = $errors['NOT_IDENTIFIED'];
+
+        if (isset($response['response']) &&
+            isset($response['response']['cause']) &&
+            count($response['response']['cause']) > 0) {
+
+            // get first error
+            $cause = $response['response']['cause'][0];
+
+            if (isset($errors[$cause['code']])) {
+
+                //if exist get message error
+                $messageErrorToClient = $errors[$cause['code']];
+            }
+        }
+
+        return $messageErrorToClient;
+    }
+
+    /**
+     *  Return info of payment returned by CP api
+     *
+     * @param $payment_id
+     *
+     * @return array
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function getPaymentV1($payment_id)
+    {
+        if (!$this->_accessToken) {
+            $this->_accessToken = $this->_scopeConfig->getValue(\Bring\Pix\Helper\ConfigData::PATH_ACCESS_TOKEN, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        }
+
+        $cp = $this->_coreHelper->getApiInstance($this->_accessToken);
+
+        return $cp->get("/api/payments/" . $payment_id);
+    }
+
+    /**
+     * @return array
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function getPaymentMethods()
+    {
+        $cp = $this->getApiInstance();
+
+        $payment_methods = $cp->get("/v1/payment_methods");
+
+        return $payment_methods;
+    }
+
+    /**
+     * @return array
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function getIdentificationTypes()
+    {
+        $cp = $this->getApiInstance();
+
+        $identificationTypes = $cp->get("/v1/identification_types");
+
+        return $identificationTypes;
+    }
+
+    /**
+     * @return mixed|string
+     */
+    public function getEmailCustomer()
+    {
+        $customer = $this->_customerSession->getCustomer();
+        $email = $customer->getEmail();
+        if (empty($email)) {
+            $quote = $this->_getQuote();
+            $email = $quote->getBillingAddress()->getEmail();
+        }
+
+        return $email;
+    }
+
+    /**
+     * @return float
+     */
+    public function getAmount($quote = null)
+    {
+        if (!$quote) {
+            $quote = $this->_getQuote();
+        }
+
+        $total = $quote->getBaseGrandTotal();
+
+        return (float)$total;
+    }
+
+    /**
+     * Return info of order returned by CP api
+     *
+     * @param $merchant_order_id
+     *
+     * @return array
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function getMerchantOrder($merchant_order_id)
+    {
+        $cp = $this->getApiInstance();
+
+        return $cp->get("/merchant_orders/" . $merchant_order_id);
+    }
+
+    public function getPayment($payment_id)
+    {
+        $cp = $this->getApiInstance();
+
+        return $cp->get("/api/payments/" . $payment_id);
+    }
+
+}

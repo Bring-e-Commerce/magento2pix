@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="pix_advanced" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>Advanced</label>
+        <field id="heading_developer" translate="label" sortOrder="80" showInDefault="1" showInWebsite="1">
+            <label>Developer Options</label>
+            <frontend_model>Magento\Config\Block\System\Config\Form\Field\Heading</frontend_model>
+            <attribute type="shared">1</attribute>
+        </field>
+
+        <field id="logs" translate="label comment" type="select" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Log to File</label>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <config_path>payment/pix/logs</config_path>
+            <comment>A file named pix.log will be created in your store's log folder (var/log). This file will
+                contain the module debug, where it will help to understand the behavior of the module.
+            </comment>
+        </field>
+
+        <field id="version" translate="label" type="label" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Current Version</label>
+            <backend_model>Bring\Pix\Block\Adminhtml\System\Config\Version</backend_model>
+        </field>
+
+    </group>
+</include>

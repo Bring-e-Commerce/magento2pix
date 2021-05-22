@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!--<preference for="Bring\Pix\Helper\Message\MessageInterface" type="Bring\Pix\Helper\Message\StatusOrderMessage"/>-->
+    <preference for="Magento\Framework\Setup\ModuleContextInterface" type="Magento\Setup\Model\ModuleContext"/>
+    <preference for="Magento\Quote\Api\CartRepositoryInterface" type="Magento\Quote\Model\QuoteRepository"/>
+    <type name="Bring\Pix\Logger\Handler\System">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Bring\Pix\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Bring\Pix\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">pix</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">Bring\Pix\Logger\Handler\System</item>
+            </argument>
+        </arguments>
+    </type>
+    <!--
+    <type name="Bring\Pix\Model\Core">
+        <arguments>
+            <argument name="statusMessage" xsi:type="object">Bring\Pix\Helper\Message\StatusMessage</argument>
+            <argument name="statusDetailMessage" xsi:type="object">Bring\Pix\Helper\Message\StatusDetailMessage
+            </argument>
+            <argument name="statusOrderMessage" xsi:type="object">Bring\Pix\Helper\Message\StatusOrderMessage
+            </argument>
+        </arguments>
+    </type>
+    -->
+</config>
